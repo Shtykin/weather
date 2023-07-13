@@ -1,4 +1,4 @@
-package ru.shtykin.weatherapp.ui.theme
+package ru.shtykin.weatherapp.presentation.ui.theme
 
 import android.app.Activity
 import android.os.Build
