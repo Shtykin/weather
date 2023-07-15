@@ -1,6 +1,7 @@
 package ru.shtykin.weatherapp.presentation
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -38,16 +39,27 @@ class MainActivity : ComponentActivity() {
                     mainScreenContent = {
                         MainScreen(
                             uiState = uiState,
-                            onGetWeatherClick = {viewModel.getWeather("Irkutsk")}
+//                            onSwipeDownWeatherCard = {},
+                            onCityClick = {viewModel.getWeather(it)},
+                            onAddClick = {
+                                navHostController.navigate(Screen.Settings.route)
+                                viewModel.openSettingsScreen()
+                            }
                         )
                     },
                     settingsScreenContent = {
                         SettingsScreen(
                             uiState = uiState,
-//                            onGraphClick = {
-//                                navHostController.navigate(Screen.Graph.route)
-//                                viewModel.openGraphScreen()
-//                            }
+                            onAddClick = { viewModel.addCity(
+                                city = it,
+                                onSuccess = { Toast.makeText( this@MainActivity, it, Toast.LENGTH_SHORT ).show() },
+                                onFailure = { Toast.makeText( this@MainActivity, it, Toast.LENGTH_SHORT ).show() },
+                            ) },
+                            onDeleteClick = { viewModel.deleteCity(it) },
+                            onBackClick = {
+                                navHostController.popBackStack()
+                                viewModel.openMainScreen()
+                            }
                         )
                     },
                 )

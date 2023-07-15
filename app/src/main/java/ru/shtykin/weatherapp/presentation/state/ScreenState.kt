@@ -1,16 +1,21 @@
 package ru.shtykin.weatherapp.presentation.state
 
-import ru.shtykin.weatherapp.presentation.screen.main.MainScreenState
-import ru.shtykin.weatherapp.presentation.screen.settings.SettingsScreenState
+import ru.shtykin.weatherapp.domain.entity.CityWeather
+import ru.shtykin.weatherapp.domain.entity.CurrentWeather
 
 sealed class ScreenState {
 
     data class MainScreen(
-        val state: MainScreenState
+        val currentWeather: CurrentWeather?,
+        val isUpdateWeather: Boolean,
+        val errorUpdate: String?,
+        val cities: List<CityWeather>?,
+        val toggleUpdateList: Boolean
     ) : ScreenState()
 
     data class SettingsScreen(
-        val state: SettingsScreenState
+        val cities: List<String>,
+        val isLoading: Boolean
     ) : ScreenState()
 
 }

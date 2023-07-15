@@ -86,6 +86,14 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))
 
     implementation "io.coil-kt:coil-compose:2.4.0"
+
+    def room_version = "2.5.2"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+
+    implementation 'com.google.accompanist:accompanist-swiperefresh:0.25.1'
 }
 
 kapt {

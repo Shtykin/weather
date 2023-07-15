@@ -1,6 +1,7 @@
 package ru.shtykin.weatherapp.di
 
 import android.content.Context
+import androidx.room.Room
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -12,6 +13,8 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import ru.shtykin.weatherapp.data.db.WeatherDataBase
+import ru.shtykin.weatherapp.data.db.dao.CityDao
 import ru.shtykin.weatherapp.data.mapper.Mapper
 import ru.shtykin.weatherapp.data.network.ApiService
 import ru.shtykin.weatherapp.data.repository.RepositoryImpl
@@ -25,8 +28,24 @@ class DataModule {
 
     @Provides
     @Singleton
-    fun provideRepository(apiService: ApiService, mapper: Mapper): Repository {
-        return RepositoryImpl(apiService, mapper)
+    fun provideRepository(apiService: ApiService, mapper: Mapper, db: WeatherDataBase): Repository {
+        return RepositoryImpl(apiService, mapper, db)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLocalDatabase(@ApplicationContext context: Context): WeatherDataBase {
+        return Room.databaseBuilder(
+            context,
+            WeatherDataBase::class.java,
+            "db"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCityDao(db: WeatherDataBase): CityDao {
+        return db.getCityDao()
     }
 
     @Provides
@@ -35,11 +54,13 @@ class DataModule {
         return retrofit.create(ApiService::class.java)
     }
 
+
+
     @Provides
     @Singleton
     fun provideRetrofit(gson: Gson, okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://api.weatherapi.com/")
+            .baseUrl("https://api.weatherapi.com/")
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttpClient)
             .build()
