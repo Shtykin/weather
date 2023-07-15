@@ -1,6 +1,5 @@
 package ru.shtykin.weatherapp.data.repository
 
-import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import ru.shtykin.weatherapp.data.db.WeatherDataBase
@@ -10,6 +9,7 @@ import ru.shtykin.weatherapp.data.network.ApiService
 import ru.shtykin.weatherapp.domain.Repository
 import ru.shtykin.weatherapp.domain.entity.CityWeather
 import ru.shtykin.weatherapp.domain.entity.CurrentWeather
+import ru.shtykin.weatherapp.domain.entity.ForecastWeather
 
 class RepositoryImpl(
     private val apiService: ApiService,
@@ -18,9 +18,17 @@ class RepositoryImpl(
 ) : Repository {
 
     override suspend fun getCurrentWeather(city: String): CurrentWeather {
-        val response = apiService.getCurrentWeather(city)
+        val response = apiService.getCurrentWeather(city, "ru")
         response.execute().body()?.let {
             return mapper.mapCurrentWeatherDtoToCurrentWeather(it)
+        }
+        throw IllegalStateException("Response body is empty")
+    }
+
+    override suspend fun getForecastWeather(city: String, days: Int): List<ForecastWeather> {
+        val response = apiService.getForecastWeather(city, days.toString(), "ru")
+        response.execute().body()?.let {
+            return mapper.mapForecastWeatherDtoToForecastWeather(it)
         }
         throw IllegalStateException("Response body is empty")
     }
@@ -57,7 +65,7 @@ class RepositoryImpl(
                     emit(
                         CityWeather(
                             name = city,
-                            temperature = 0f,
+                            temperature = null,
                             iconUrl = "",
                             isError = true,
                             isUpdate = false
@@ -66,5 +74,18 @@ class RepositoryImpl(
                 }
             }
         }
+    }
+
+    override suspend fun insertForecastToDb(forecastWeather: ForecastWeather) {
+        val forecastDbModel = mapper.mapForecastWeatherToForecastDbModel(forecastWeather)
+        db.getForecastDao().insert(forecastDbModel)
+    }
+
+    override suspend fun deleteAllForecastsFromDb() {
+        db.getForecastDao().deleteAllForecasts()
+    }
+
+    override suspend fun getAllForecastsFromDb(): List<ForecastWeather> {
+        return db.getForecastDao().getAllForecast().map { mapper.mapForecastDbModelToForecastWeather(it) }
     }
 }

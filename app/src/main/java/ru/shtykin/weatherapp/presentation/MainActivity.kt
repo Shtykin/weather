@@ -40,21 +40,41 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             uiState = uiState,
 //                            onSwipeDownWeatherCard = {},
-                            onCityClick = {viewModel.getWeather(it)},
+                            onCityClick = {
+                                viewModel.getWeather(it)
+                                viewModel.getForecastWeather(it)
+                            },
                             onAddClick = {
                                 navHostController.navigate(Screen.Settings.route)
                                 viewModel.openSettingsScreen()
+                            },
+                            onDayClick = {
+                                if (it.size == 2) viewModel.showForecast(it[0], it[1])
                             }
                         )
                     },
                     settingsScreenContent = {
                         SettingsScreen(
                             uiState = uiState,
-                            onAddClick = { viewModel.addCity(
-                                city = it,
-                                onSuccess = { Toast.makeText( this@MainActivity, it, Toast.LENGTH_SHORT ).show() },
-                                onFailure = { Toast.makeText( this@MainActivity, it, Toast.LENGTH_SHORT ).show() },
-                            ) },
+                            onAddClick = {
+                                viewModel.addCity(
+                                    city = it,
+                                    onSuccess = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            it,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onFailure = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            it,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                )
+                            },
                             onDeleteClick = { viewModel.deleteCity(it) },
                             onBackClick = {
                                 navHostController.popBackStack()

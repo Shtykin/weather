@@ -1,11 +1,11 @@
 package ru.shtykin.weatherapp.domain.entity
 
-data class CurrentWeather(
+data class ForecastWeather(
+    val day: String,
     val city: String,
-    val temperature: Int,
+    val temperature: String,
     val iconUrl: String,
     val windMps: String,
-    val pressureMmHg: Int,
+    val avghumidity: String,
     val text: String,
-    val lastUpdated: String,
     )

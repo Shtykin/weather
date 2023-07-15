@@ -1,6 +1,5 @@
 package ru.shtykin.weatherapp.presentation
 
-import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -11,21 +10,31 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.shtykin.weatherapp.domain.entity.CityWeather
+import ru.shtykin.weatherapp.domain.entity.DayWeather
+import ru.shtykin.weatherapp.domain.entity.ForecastWeather
+import ru.shtykin.weatherapp.domain.usecase.DeleteAllForecastsFromDbUseCase
 import ru.shtykin.weatherapp.domain.usecase.DeleteCityFromDbUseCase
 import ru.shtykin.weatherapp.domain.usecase.GetAllCitiesFromDbUseCase
+import ru.shtykin.weatherapp.domain.usecase.GetAllForecastsFromDbUseCase
 import ru.shtykin.weatherapp.domain.usecase.GetCurrentWeatherUseCase
 import ru.shtykin.weatherapp.domain.usecase.GetFlowAllCitiesWeatherUseCase
+import ru.shtykin.weatherapp.domain.usecase.GetForecastWeatherUseCase
 import ru.shtykin.weatherapp.domain.usecase.InsertCityToDbUseCase
+import ru.shtykin.weatherapp.domain.usecase.InsertForecastToDbUseCase
 import ru.shtykin.weatherapp.presentation.state.ScreenState
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val getCurrentWeatherUseCase: GetCurrentWeatherUseCase,
+    private val getForecastWeatherUseCase: GetForecastWeatherUseCase,
     private val insertCityToDbUseCase: InsertCityToDbUseCase,
     private val deleteCityFromDbUseCase: DeleteCityFromDbUseCase,
     private val getAllCitiesFromDbUseCase: GetAllCitiesFromDbUseCase,
-    private val getFlowAllCitiesWeatherUseCase: GetFlowAllCitiesWeatherUseCase
+    private val getFlowAllCitiesWeatherUseCase: GetFlowAllCitiesWeatherUseCase,
+    private val insertForecastToDbUseCase: InsertForecastToDbUseCase,
+    private val deleteAllForecastsFromDbUseCase: DeleteAllForecastsFromDbUseCase,
+    private val getAllForecastsFromDbUseCase: GetAllForecastsFromDbUseCase
 ) : ViewModel() {
 
     private val _uiState =
@@ -35,7 +44,9 @@ class MainViewModel @Inject constructor(
                 isUpdateWeather = false,
                 errorUpdate = null,
                 cities = null,
-                toggleUpdateList = false
+                toggleUpdateList = false,
+                forecastsWeather = null,
+                forecasts = null
             )
         )
 
@@ -61,13 +72,16 @@ class MainViewModel @Inject constructor(
                 val currentCity = getAllCitiesFromDb()[0]
                 getWeather(currentCity)
                 getAllCitiesWeather()
+                getForecastWeather(currentCity)
             } catch (e: Exception) {
                 _uiState.value = ScreenState.MainScreen(
                     currentWeather = null,
                     isUpdateWeather = false,
                     errorUpdate = "Список городов пуст",
                     cities = null,
-                    toggleUpdateList = false
+                    toggleUpdateList = false,
+                    forecastsWeather = null,
+                    forecasts = null
                 )
             }
         }
@@ -89,25 +103,66 @@ class MainViewModel @Inject constructor(
             isUpdateWeather = false,
             errorUpdate = null,
             cities = null,
-            toggleUpdateList = false
+            toggleUpdateList = false,
+            forecastsWeather = null,
+            forecasts = null
         )
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val currentCity = getAllCitiesFromDb()[0]
                 getWeather(currentCity)
                 getAllCitiesWeather()
+                getForecastWeather(currentCity)
             } catch (e: Exception) {
                 _uiState.value = ScreenState.MainScreen(
                     currentWeather = null,
                     isUpdateWeather = false,
                     errorUpdate = "Список городов пуст",
                     cities = null,
-                    toggleUpdateList = false
+                    toggleUpdateList = false,
+                    forecastsWeather = null,
+                    forecasts = null
                 )
             }
         }
     }
 
+    fun showForecast(city:String, day: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val forecastsWeather = getAllForecastsFromDb().find { it.day == day && it.city == city }
+            _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
+                forecastsWeather = forecastsWeather
+            )
+        }
+    }
+
+    fun getForecastWeather(city: String) {
+        _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
+            forecasts = null
+        )
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val forecastWeather = getForecastWeather(city, FORECAST_DAYS)
+                replaceForecast(forecastWeather)
+                val listDaysWeather = mutableListOf<DayWeather>()
+                forecastWeather.forEach {
+                    listDaysWeather.add(DayWeather(
+                        city = city,
+                        day = it.day,
+                        temperature = it.temperature,
+                        iconUrl = it.iconUrl,
+                        isError = false,
+                        isUpdate = false
+                    ))
+                }
+                _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
+                    forecasts = listDaysWeather
+                )
+            } catch (e: Exception) {
+
+            }
+        }
+    }
 
     private fun getAllCitiesWeather() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -136,7 +191,6 @@ class MainViewModel @Inject constructor(
                     collect.temperature
                 listCitiesWeather.find { it.name == collect.name }?.isUpdate = false
                 if (_uiState.value is ScreenState.MainScreen) {
-                    Log.e("DEBUG", "list1 = $listCitiesWeather")
                     _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
                         cities = listCitiesWeather,
                         toggleUpdateList = toggleUpdater,
@@ -147,7 +201,6 @@ class MainViewModel @Inject constructor(
             }
             toggleUpdater = !toggleUpdater
             if (_uiState.value is ScreenState.MainScreen) {
-                Log.e("DEBUG", "list1 = $listCitiesWeather")
                 _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
                     toggleUpdateList = toggleUpdater,
                 )
@@ -157,7 +210,10 @@ class MainViewModel @Inject constructor(
 
     fun getWeather(city: String) {
         if (_uiState.value is ScreenState.MainScreen) {
-            _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(isUpdateWeather = true)
+            _uiState.value = (_uiState.value as ScreenState.MainScreen).copy(
+                isUpdateWeather = true,
+                forecastsWeather = null,
+            )
         }
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -180,6 +236,8 @@ class MainViewModel @Inject constructor(
             }
         }
     }
+
+
 
     fun addCity(
         city: String,
@@ -220,7 +278,14 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private suspend fun replaceForecast(forecastWeather: List<ForecastWeather>) {
+        deleteAllForecastsFromDb()
+        forecastWeather.forEach { insertForecastToDb(it) }
+    }
+
     private suspend fun getCurrentWeather(city: String) = getCurrentWeatherUseCase.execute(city)
+
+    private suspend fun getForecastWeather(city: String, days: Int) = getForecastWeatherUseCase.execute(city, days)
 
     private suspend fun insertCityToDb(name: String) = insertCityToDbUseCase.execute(name)
 
@@ -229,4 +294,14 @@ class MainViewModel @Inject constructor(
     private suspend fun getAllCitiesFromDb() = getAllCitiesFromDbUseCase.execute()
 
     private suspend fun getFlowAllCitiesWeatherUseCase() = getFlowAllCitiesWeatherUseCase.execute()
+
+    private suspend fun insertForecastToDb(forecastWeather: ForecastWeather) = insertForecastToDbUseCase.execute(forecastWeather)
+
+    private suspend fun deleteAllForecastsFromDb() = deleteAllForecastsFromDbUseCase.execute()
+
+    private suspend fun getAllForecastsFromDb() = getAllForecastsFromDbUseCase.execute()
+
+    companion object {
+        private const val FORECAST_DAYS = 10
+    }
 }

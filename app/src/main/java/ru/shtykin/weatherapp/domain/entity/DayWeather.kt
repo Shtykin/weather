@@ -1,8 +1,9 @@
 package ru.shtykin.weatherapp.domain.entity
 
-data class CityWeather(
-    val name: String,
-    var temperature: Float?,
+data class DayWeather(
+    val city: String,
+    val day: String,
+    var temperature: String,
     var iconUrl: String,
     val isError: Boolean,
     var isUpdate: Boolean
