@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -53,7 +54,6 @@ import ru.shtykin.weatherapp.presentation.state.ScreenState
 @Composable
 fun MainScreen(
     uiState: ScreenState,
-//    onSwipeDownWeatherCard: (() -> Unit)?,
     onCityClick: ((String) -> Unit)?,
     onAddClick: (() -> Unit)?,
     onDayClick: ((List<String>) -> Unit)?
@@ -78,9 +78,8 @@ fun MainScreen(
     val isWeatherUpdate = (uiState as? ScreenState.MainScreen)?.isUpdateWeather ?: false
     val errorUpdate = (uiState as? ScreenState.MainScreen)?.errorUpdate
 
-    Scaffold() {
-        Column() {
-            Spacer(modifier = Modifier.height(20.dp))
+    Scaffold(
+        topBar = {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -122,7 +121,7 @@ fun MainScreen(
                                     Text(text = it.text)
                                 }
                                 Spacer(modifier = Modifier.weight(1f))
-                                if (isWeatherUpdate) CircularProgressIndicator()
+                                if (isWeatherUpdate) CircularProgressIndicator(color = Color.Gray)
 
                             }
                             Element(
@@ -152,7 +151,7 @@ fun MainScreen(
                         }
                         if (weather == null) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                CircularProgressIndicator(Modifier.align(Alignment.Center))
+                                CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.Gray)
                             }
                         }
                     }
@@ -207,90 +206,97 @@ fun MainScreen(
                 }
 
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            LazyRow {
-                weather?.let { currentWeather ->
-                    item {
-                        ForecastMiniElement(city = currentWeather.city,
-                            day = "Сейчас",
-                            temperature = "${currentWeather.temperature}°C",
-                            iconUrl = currentWeather.iconUrl,
-                            isError = false,
-                            isUpdate = isWeatherUpdate,
-                            onDayClick = { onCityClick?.invoke(currentWeather.city) })
+        },
+        bottomBar = {
+            Column() {
+                LazyRow {
+                    item { AddCityButton(onAddClick = onAddClick) }
+                    citiesWeather?.let { list ->
+                        items(list) {
+                            CityElement(
+                                name = it.name,
+                                temperature = if (it.temperature != null) "${it.temperature}°C" else "",
+                                iconUrl = it.iconUrl,
+                                isError = it.isError,
+                                isUpdate = it.isUpdate,
+                                onCityClick = onCityClick
+                            )
+                        }
+                        if (list.size > 3) {
+                            item { AddCityButton(onAddClick = onAddClick) }
+                        }
                     }
                 }
-
-                forecasts?.let { list ->
-                    items(list) {
-                        ForecastMiniElement(
-                            city = it.city,
-                            day = it.day,
-                            temperature = it.temperature + "°C",
-                            iconUrl = it.iconUrl,
-                            isError = it.isError,
-                            isUpdate = it.isUpdate,
-                            onDayClick = onDayClick
-                        )
-                    }
-                }
-                if (forecasts == null) {
-                    items(10) {
-                        ForecastMiniElement(city = currentWeather?.city ?: "",
-                            day = "",
-                            temperature = "",
-                            iconUrl = "",
-                            isError = false,
-                            isUpdate = true,
-                            onDayClick = {})
-                    }
-
+                Row() {
+                    Text(
+                        modifier = Modifier.padding(start = 4.dp),
+                        text = "using Weather Api",
+                        fontStyle = FontStyle.Italic,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        modifier = Modifier.padding(end = 4.dp),
+                        text = "by Evgenii Shtykin",
+                        fontStyle = FontStyle.Italic,
+                        color = Color.Gray
+                    )
                 }
             }
-            Spacer(modifier = Modifier.weight(1f))
-            LazyRow {
-                item { AddCityButton(onAddClick = onAddClick) }
-                citiesWeather?.let { list ->
-                    items(list) {
-                        CityElement(
-                            name = it.name,
-                            temperature = if (it.temperature != null) "${it.temperature}°C" else "",
-                            iconUrl = it.iconUrl,
-                            isError = it.isError,
-                            isUpdate = it.isUpdate,
-                            onCityClick = onCityClick
-                        )
-                    }
-                    if (list.size > 7) {
-                        item { AddCityButton(onAddClick = onAddClick) }
-                    }
-                }
-
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-            Row() {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    modifier = Modifier.padding(end = 4.dp),
-                    text ="using Weather Api",
-                    fontStyle = FontStyle.Italic,
-                    color = Color.Gray
-                )
-            }
-            Row() {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    modifier = Modifier.padding(end = 4.dp),
-                    text ="by Evgenii Shtykin",
-                    fontStyle = FontStyle.Italic,
-                    color = Color.Gray
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
         }
-    }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier.padding(
+                bottom = paddingValues.calculateBottomPadding(),
+                top = paddingValues.calculateTopPadding()
+            ),
+        ) {
+            weather?.let { currentWeather ->
+                item {
+                    ForecastMiniElement(city = currentWeather.city,
+                        day = "Сейчас",
+                        temperature = "${currentWeather.temperature}°C",
+                        iconUrl = currentWeather.iconUrl,
+                        text = currentWeather.text,
+                        isError = false,
+                        isUpdate = isWeatherUpdate,
+                        onDayClick = { onCityClick?.invoke(currentWeather.city) })
+                }
+            }
 
+            forecasts?.let { list ->
+                items(list) {
+                    ForecastMiniElement(
+                        city = it.city,
+                        day = it.day,
+                        temperature = it.temperature + "°C",
+                        text = it.text,
+                        iconUrl = it.iconUrl,
+                        isError = it.isError,
+                        isUpdate = it.isUpdate,
+                        onDayClick = onDayClick
+                    )
+                }
+            }
+            if (forecasts == null) {
+                items(10) {
+                    ForecastMiniElement(city = currentWeather?.city ?: "",
+                        day = "",
+                        temperature = "",
+                        iconUrl = "",
+                        text = "",
+                        isError = false,
+                        isUpdate = true,
+                        onDayClick = {})
+                }
+
+            }
+        }
+//            Spacer(modifier = Modifier.weight(1f))
+//
+//            Spacer(modifier = Modifier.height(20.dp))
+
+    }
 }
 
 @Composable
@@ -331,6 +337,7 @@ fun ForecastMiniElement(
     city: String,
     day: String,
     temperature: String,
+    text: String,
     iconUrl: String,
     isError: Boolean,
     isUpdate: Boolean,
@@ -338,27 +345,21 @@ fun ForecastMiniElement(
 ) {
     Card(
         modifier = Modifier
-            .size(100.dp)
-            .padding(8.dp)
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onDayClick?.invoke(listOf(city, day)) },
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 4.dp),
-                text = day,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
             if (isUpdate) {
-                CircularProgressIndicator(
-                    Modifier
-                        .size(32.dp)
-                        .align(Alignment.Center)
-                )
+                CircularProgressIndicator( Modifier.size(32.dp), color = Color.Gray )
             } else {
                 AsyncImage(
                     model = iconUrl,
@@ -366,17 +367,23 @@ fun ForecastMiniElement(
                     modifier = Modifier
                         .clip(CircleShape)
                         .size(32.dp)
-                        .align(Alignment.Center)
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column() {
+                Text(
+                    text = day,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = text,
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
             Text(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 4.dp),
                 text = temperature,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
+            Spacer(modifier = Modifier.width(8.dp))
         }
     }
 }
@@ -408,11 +415,7 @@ fun CityElement(
                 overflow = TextOverflow.Ellipsis,
             )
             if (isUpdate) {
-                CircularProgressIndicator(
-                    Modifier
-                        .size(32.dp)
-                        .align(Alignment.Center)
-                )
+                CircularProgressIndicator( Modifier.size(32.dp).align(Alignment.Center), color = Color.Gray )
             } else {
                 AsyncImage(
                     model = iconUrl,

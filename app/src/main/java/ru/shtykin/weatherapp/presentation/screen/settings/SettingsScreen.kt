@@ -94,12 +94,16 @@ fun SettingsScreen(
                             onAddClick?.invoke(searchText.text)
                             focusManager.clearFocus()
                             keyboardController?.hide()
+                            searchText = TextFieldValue(text = "")
                         }),
                         colors = TextFieldDefaults.textFieldColors(
                             containerColor = MaterialTheme.colorScheme.background,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
+                            disabledIndicatorColor = Color.Transparent,
+                            disabledLabelColor = Color.DarkGray,
+                            focusedLabelColor = Color.DarkGray,
+                            unfocusedLabelColor = Color.DarkGray
                         )
                     )
                 },
@@ -117,6 +121,7 @@ fun SettingsScreen(
                             onAddClick?.invoke(searchText.text)
                             focusManager.clearFocus()
                             keyboardController?.hide()
+                            searchText = TextFieldValue(text = "")
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Add,

@@ -151,6 +151,7 @@ class MainViewModel @Inject constructor(
                         day = it.day,
                         temperature = it.temperature,
                         iconUrl = it.iconUrl,
+                        text = it.text,
                         isError = false,
                         isUpdate = false
                     ))

@@ -5,6 +5,7 @@ data class DayWeather(
     val day: String,
     var temperature: String,
     var iconUrl: String,
+    var text: String,
     val isError: Boolean,
     var isUpdate: Boolean
 )
