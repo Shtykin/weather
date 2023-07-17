@@ -1,4 +1,4 @@
-package ru.shtykin.weatherapp.ui.theme
+package ru.shtykin.weatherapp.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
